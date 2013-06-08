@@ -1,0 +1,39 @@
+﻿nav {
+
+}
+
+nav a {
+
+}
+
+#viewport {
+	border: dashed 1px #ccc;
+}
+
+.main {
+	overflow: hidden;
+	padding: 10px;
+	border: solid 1px #036;
+	border-radius: 5px;
+	width: 1200px;
+}
+
+.panel {
+	width: 480px;
+	float: left;
+}
+
+.result {
+	width: 700px;
+	float: left;
+	padding-left: 20px;
+	overflow: auto;
+}
+
+.panel, .step, .result {
+	display: none;
+}
+
+.active {
+	display: block;
+}
