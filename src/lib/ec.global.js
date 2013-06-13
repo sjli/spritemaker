@@ -115,7 +115,9 @@
   var IsType = {
     toString: Object.prototype.toString,
     isObject: function(o) {
-      return this.toString.call(o) === "[object Object]";
+      var str =  this.toString.call(o),
+          reg = /^\[object (?!(Array|Function|String)\]$)/i;
+      return reg.test(str);
     },
     isFunction: function(o) {
       // some native function (e.g. alert) not pass the test
@@ -557,6 +559,7 @@
    * @property {number} height
    * @property {number} x: current x coordinate from left 0 to right width, when mouse on viewport
    * @property {number} y: current y coordinate from top 0 to bottom height, when mouse on viewport
+   * @property {fn} resize: resize the viewport with attribute {width, height}
    */
 
   var Viewport = Backbone.Model.extend({
@@ -570,6 +573,32 @@
       this.height = this.elm.offsetHeight || this.height;
       this.initPos();
       this.posEvents();
+    },
+
+    resize: function(o, reRenderCTXs) {
+      if (!IsType.isObject(o)) {return;}
+      if (o.width) {
+        this.width = o.width;
+        this.elm.style.width = o.width + 'px';
+        [].forEach.call(this.elm.children, function(v, i) {
+          v.width = o.width;
+        });
+      } 
+      if (o.height) {
+        this.height = o.height;
+        this.elm.style.height = o.height + 'px';
+        [].forEach.call(this.elm.children, function(v, i) {
+          v.height = o.height;
+        });
+      }
+      if (!reRenderCTXs) {return;}
+      if (IsType.isArray(reRenderCTXs)) {
+        reRenderCTXs.forEach(function(v) {
+          v.reRender();
+        });
+      } else if (IsType.isObject(reRenderCTXs)) {
+        reRenderCTXs.reRender();
+      }
     },
 
     initPos: function() {
@@ -675,6 +704,7 @@
       Layer.viewport.elm.appendChild(this.canvas);
       this.canvas.width = Layer.viewport.width;
       this.canvas.height = Layer.viewport.height;
+      this.canvas.style.position = 'absolute';
       this.canvas.id = this.customId ? 'ec_' + this.customId : 'ec_' + this.cid;
       this.ctx = this.canvas.getContext('2d');
       _enhanceCTX(this.ctx);

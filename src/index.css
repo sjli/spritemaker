@@ -8,6 +8,8 @@ nav a {
 
 #viewport {
 	border: dashed 1px #ccc;
+	position: relative;
+	overflow: hidden;
 }
 
 .main {
@@ -24,9 +26,9 @@ nav a {
 }
 
 .result {
-	width: 700px;
+	width: 702px;
 	float: left;
-	padding-left: 20px;
+	padding-left: 18px;
 	overflow: auto;
 }
 
