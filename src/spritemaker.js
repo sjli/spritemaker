@@ -21,14 +21,18 @@
 		}
 	})();
 
-	var Spriter = {
-		curTab: 0,
+	var Spriter = Backbone.Model.extend({
+		curTab: 1,
 
 		curStep: 0,
 
-		init: function() {
+		width: 200,
+
+		height: 200,
+
+		initialize: function() {
 			this.defineGraph();
-			this.init1();
+			this.init2();
 			this.bindStep();
 		},
 
@@ -57,10 +61,16 @@
 		init1: function() {
 			this.panel = document.querySelectorAll('.panel')[this.curTab];
 			this.steps = this.panel.querySelectorAll('.step');
-			this.bindResize();
+			this.bindResize1();
 			this.bindUpload1();
 			this.btnEvents1();
-			this.curX = this.curY = this.maxY = 0;
+			this.clipX = this.clipY = this.curX = this.curY = this.maxY = 0;
+		},
+
+		init2: function() {
+			this.panel = document.querySelectorAll('.panel')[this.curTab];
+			this.steps = this.panel.querySelectorAll('.step');
+			this.bindUpload2();
 		},
 
 		btnEvents1: function() {
@@ -74,6 +84,11 @@
 			update.addEventListener('click', function() {
 				This.updateCss();
 			}, false);
+			this.on('next', function() {
+				if (This.curStep == 2) {
+					This.updateCss();
+				}
+			});
 		},
 
 		initLayer: function() {
@@ -81,8 +96,8 @@
 			this.result = document.querySelector('.result');
 
 			if (this.curTab == 0) {
-				this.viewport.style.width = this._btnWidth1.value + 'px';
-				this.viewport.style.height = this._btnHeight1.value + 'px';
+				this.viewport.style.width = this._btnWidth1 ? this._btnWidth1.value + 'px' : this.width + 'px';
+				this.viewport.style.height = this._btnHeight1 ? this._btnHeight1.value + 'px' : this.height + 'px';
 			}
 			this.result.addClass('active');
 			this.layer = new EC.Layer('view');
@@ -98,6 +113,7 @@
 					if (v.hasClass('disable')) {return;}
 					This.steps[This.curStep--].delClass('active');
 					This.steps[This.curStep].addClass('active');
+					This.trigger('prev');
 				}, false);
 			});
 
@@ -106,6 +122,7 @@
 					if (v.hasClass('disable')) {return;}
 					This.steps[This.curStep++].delClass('active');
 					This.steps[This.curStep].addClass('active');
+					This.trigger('next');
 				}, false);
 			});
 		},
@@ -152,7 +169,43 @@
 			});
 		},
 
-		bindResize: function() {
+		bindUpload2: function() {
+			var btn = document.querySelector('#upload2'),
+				This = this;
+
+			btn.addEventListener('change', function(e) {
+				var files = this.files,
+					i = 0,
+					img = document.createElement('img'),
+					reader = new FileReader(),
+					name = files[0].name.match(/.*(?=\.\w+$)/)[0],
+					data;
+
+					if (files.length == 0) {return;}
+
+					img.onload = function() {
+						data = {
+							img: this,
+							width: this.width,
+							height: this.height,
+							name: name
+						};
+						if (!This.layer) {
+							This.initLayer();
+						}
+						EC.Layer.viewport.resize({width: data.width, height: data.height}, This.layer.ctx);
+						This.detect2(data);
+					};
+
+					reader.onload = function(e) {
+						img.src = e.target.result;
+					};
+
+					reader.readAsDataURL(files[0]);
+			});
+		},
+
+		bindResize1: function() {
 			var This = this;
 			this._btnWidth1 = document.querySelector('.set-width1');
 			this._btnHeight1 = document.querySelector('.set-height1');
@@ -207,7 +260,68 @@
 			});
 
 			this.updateUrl();
-			this.updateCss();
+		},
+
+		detect2: function(data) {
+			var c = this.layer.canvas,
+				t = this.layer.ctx,
+				imgData,
+				worker = new Worker("workerDetect.js"),
+				This = this;
+
+			t.drawImage(data.img, 0, 0, data.width, data.height);
+			imgData = t.getImageData(0, 0, data.width, data.height);
+			this.coords = [];
+
+			worker.onmessage = function(e) {
+				if (e.data == 'over') {
+					t.clearRect(0, 0, c.width, c.height);
+					t.drawImage(data.img, 0, 0, c.width, c.height);
+					This.render2();
+					return;
+				}
+				var coord = e.data, isInner = false;
+
+				for (var i = 0; i < This.coords.length; i++) {
+					if (coord.minX >= This.coords[i].minX && coord.minY >= This.coords[i].minY
+						&& coord.maxX <= This.coords[i].maxX && coord.maxY <= This.coords[i].maxY) {
+						isInner = true;
+						break;
+					}
+				}
+
+				if (!isInner) {
+					This.coords.push({
+						x: coord.minX,
+						y: coord.minY,
+						w: coord.maxX - coord.minX + 1,
+						h: coord.maxY - coord.minY + 1
+					});
+					t.strokeStyle = '#fcc';
+					t.strokeRect(coord.minX, coord.minY, coord.maxX - coord.minX, coord.maxY - coord.minY);
+				}	
+			};
+
+			worker.postMessage(imgData);
+		},
+
+		render2: function() {
+			var t = this.layer.ctx,
+				This = this;
+
+			this.graphs = [];
+
+			this.coords.forEach(function(v) {
+				var graph = new This.Graph({
+					x: v.x,
+					y: v.y,
+					w: v.w,
+					h: v.h
+				});
+				graph.initData(t);
+				graph.render(t);
+				This.graphs.push(graph);
+			});
 		},
 
 		clip: function() {
@@ -222,7 +336,10 @@
 			ctx.translate(-minX, -minY);
 			ctx.reRender();
 			ctx.restore();
+			this.clipX = minX;
+			this.clipY = minY;
 			this.updateUrl();
+			this.updateCss();
 		},
 
 		updateUrl: function() {
@@ -243,15 +360,16 @@
 				txt = '',
 				bgtxt = '',
 				len = this.layer.ctx.graphs.length,
-				coma = len == 1 ? '' : ',';
+				coma = len == 1 ? '' : ',',
+				This = this;
 
 			if (detector) {
 				detector.style.display = 'none';
 			}
 
 			this.layer.ctx.graphs.forEach(function(v, i) {
-				var x = v.x ? '-' + v.x + 'px' : '0',
-					y = v.y ? '-' + v.y + 'px' : '0',
+				var x = This.clipX - v.x ? This.clipX - v.x + 'px' : '0',
+					y = This.clipY - v.y ? This.clipY - v.y + 'px' : '0',
 					last = ind == 0 ? v.name : i,
 					cls = '.' + pre + last;
 
@@ -273,8 +391,8 @@
 			codes.innerHTML = bgtxt + txt;
 
 		}
-	};
+	});
 
-	Spriter.init();
+	var spriter = new Spriter;
 
 //})(EC);

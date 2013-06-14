@@ -12,7 +12,7 @@
       <a href="#nogo">从一张sprite图识别</a>
 	</nav>
 	<div class="main">
-      <div class="panel panel1 active">
+      <div class="panel panel1">
       	<div class="step step1 active">
       	  <p class="tip">Step.1 选择上传icon图(可多选), 选择要生成的Sprite图片尺寸，选完所有后点击进入下一步</p>
       	  <input id="upload1" multiple type="file" /><br />
@@ -24,9 +24,9 @@
       	<div class="step step2">
       	  <p class="tip">Step.2 确认要生成的class命名规则，然后点击进入下一步（可以拖放图片中的icon位置进行微调）</p>
       	  <label>前缀：<input type="text" value='icon_' placeholder="前缀" class="set-prefix1" /></label><br />
-	      <label>命名：<select class="set-name-rule1"><option value=1>前缀+原图名_序号</option><option value=2>前缀+序号</option></select></label><br />
-		  <a class="btn-prev" href="#nogo">上一步</a>
-		  <a class="btn-next" href="#nogo">下一步</a>
+  	      <label>命名：<select class="set-name-rule1"><option value=1>前缀+原图名_序号</option><option value=2>前缀+序号</option></select></label><br />
+    		  <a class="btn-prev" href="#nogo">上一步</a>
+    		  <a class="btn-next" href="#nogo">下一步</a>
       	</div>
       	<div class="step step3">
       	  <p class="tip">Step.3 点击保存图片以及css代码（也可以再次拖放图片中的icon位置进行微调，调整后别忘了点击更新来生成新的css）</p>
@@ -37,8 +37,26 @@
       	  
       	</div>
       </div>
-      <div class="panel panel2">
-        <div class="step step1"></div>
+      <div class="panel panel2 active">
+        <div class="step step1 active">
+          <p class="tip">Step.1 选择上传Sprite图, 选择要生成的Sprite图片尺寸，完成后自动进入下一步</p>
+          <input id="upload2" type="file" /><br />
+          <a class="btn-next disable" href="#nogo">下一步</a>
+        </div>
+        <div class="step step2">
+          <p class="tip">Step.2 确认要生成的class命名规则，然后点击进入下一步（可以拖放图片中的icon位置进行微调）</p>
+          <label>前缀：<input type="text" value='icon_' placeholder="前缀" class="set-prefix2" /></label><br />
+          <label>命名：<select class="set-name-rule2"><option value=1>前缀+原图名_序号</option><option value=2>前缀+序号</option></select></label><br />
+          <a class="btn-prev" href="#nogo">上一步</a>
+          <a class="btn-next" href="#nogo">下一步</a>
+        </div>
+        <div class="step step3">
+          <p class="tip">Step.3 点击保存图片以及css代码（也可以再次拖放图片中的icon位置进行微调，调整后别忘了点击更新来生成新的css）</p>
+          <a class="btn-prev" href="#nogo">上一步</a>
+          <a class="btn-clip" href="#nogo">裁去空白</a>
+          <a class="btn-update" href="#nogo">更新css</a>
+          <a class="btn-down" href="#nogo">下载图片</a> 
+        </div>
       </div>
       <div class="result">
       	<div id="viewport"></div>
