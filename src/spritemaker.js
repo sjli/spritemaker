@@ -1,5 +1,5 @@
-﻿//debug
-//(function(EC) {
+﻿// alpha
+(function(EC) {
 
 	//addClass, hasClass
 	(function DomClassFns(){
@@ -22,9 +22,13 @@
 	})();
 
 	var Spriter = Backbone.Model.extend({
-		curTab: 1,
+		curTab: 0,
 
 		curStep: 0,
+
+		clipX: 0,
+
+		clipY: 0,
 
 		width: 200,
 
@@ -32,7 +36,9 @@
 
 		initialize: function() {
 			this.defineGraph();
-			this.init2();
+			this.reset();
+			this.init1();
+			this.bindTab();
 			this.bindStep();
 		},
 
@@ -58,22 +64,54 @@
 			});
 		},
 
-		init1: function() {
+		bindTab: function() {
+			var tabs = document.querySelectorAll('.tab a'),
+				panels = document.querySelectorAll('.panel'),
+				This = this;
+
+			[].forEach.call(tabs, function(v, i) {
+				v.addEventListener('click', function(e) {
+					e.preventDefault();
+					This.curTab = i;
+					This.reset();
+					panels[i].addClass('active');
+					panels[(i + 1) % 2].delClass('active');
+					if (i == 0) This.init1();
+					else This.init2();
+				}, false);
+			});
+		},
+
+		reset: function() {
+			if (this.layer) {
+				this.layer.ctx.graphs = [];
+				this.graphs = [];
+				this.curStep = 0;
+				this.layer.ctx.reRender();
+			}
 			this.panel = document.querySelectorAll('.panel')[this.curTab];
 			this.steps = this.panel.querySelectorAll('.step');
+			[].forEach.call(this.steps, function(v, i) {
+				if (i == 0) v.addClass('active');
+				else v.delClass('active');
+			})
+			this.codes = document.querySelector('.sprite-code');
+			this.codes.delClass('active');
+			this.codes.innerHTML = '';
+			this.btnEvents();
+		},
+
+		init1: function() {		
+			this.curX = this.curY = this.maxY = 0;
 			this.bindResize1();
 			this.bindUpload1();
-			this.btnEvents1();
-			this.clipX = this.clipY = this.curX = this.curY = this.maxY = 0;
 		},
 
 		init2: function() {
-			this.panel = document.querySelectorAll('.panel')[this.curTab];
-			this.steps = this.panel.querySelectorAll('.step');
 			this.bindUpload2();
 		},
 
-		btnEvents1: function() {
+		btnEvents: function() {
 			var clip = this.panel.querySelector('.btn-clip'),
 				update = this.panel.querySelector('.btn-update'),
 				This = this;
@@ -84,11 +122,6 @@
 			update.addEventListener('click', function() {
 				This.updateCss();
 			}, false);
-			this.on('next', function() {
-				if (This.curStep == 2) {
-					This.updateCss();
-				}
-			});
 		},
 
 		initLayer: function() {
@@ -111,8 +144,6 @@
 			[].forEach.call(btnPrev, function(v, i) {
 				v.addEventListener('click', function(e) {
 					if (v.hasClass('disable')) {return;}
-					This.steps[This.curStep--].delClass('active');
-					This.steps[This.curStep].addClass('active');
 					This.trigger('prev');
 				}, false);
 			});
@@ -120,10 +151,22 @@
 			[].forEach.call(btnNext, function(v, i) {
 				v.addEventListener('click', function(e) {
 					if (v.hasClass('disable')) {return;}
-					This.steps[This.curStep++].delClass('active');
-					This.steps[This.curStep].addClass('active');
 					This.trigger('next');
 				}, false);
+			});
+
+			this.on('prev', function() {
+				This.steps[This.curStep--].delClass('active');
+				This.steps[This.curStep].addClass('active');
+			});
+
+			this.on('next', function() {
+				This.steps[This.curStep++].delClass('active');
+				This.steps[This.curStep].addClass('active');
+				if (This.curStep == 2) {
+					This.codes.addClass('active');
+					This.updateCss();
+				}
 			});
 		},
 
@@ -193,6 +236,7 @@
 						if (!This.layer) {
 							This.initLayer();
 						}
+						This.layer.ctx.graphs = This.graphs = [];
 						EC.Layer.viewport.resize({width: data.width, height: data.height}, This.layer.ctx);
 						This.detect2(data);
 					};
@@ -212,6 +256,10 @@
 			this._btnPadding1 = document.querySelector('.set-padding1');
 
 			this.padding1 = parseInt(this._btnPadding1.value);
+
+			if (this.layer) {
+				EC.Layer.viewport.resize({'width': parseInt(this._btnWidth1.value), 'height': parseInt(this._btnHeight1.value)}, This.layer.ctx);
+			}
 				
 
 			this._btnWidth1.addEventListener('change', function() {
@@ -271,6 +319,7 @@
 
 			t.drawImage(data.img, 0, 0, data.width, data.height);
 			imgData = t.getImageData(0, 0, data.width, data.height);
+			this.spriteName = data.name;
 			this.coords = [];
 
 			worker.onmessage = function(e) {
@@ -281,10 +330,11 @@
 					return;
 				}
 				var coord = e.data, isInner = false;
-
+				
 				for (var i = 0; i < This.coords.length; i++) {
-					if (coord.minX >= This.coords[i].minX && coord.minY >= This.coords[i].minY
-						&& coord.maxX <= This.coords[i].maxX && coord.maxY <= This.coords[i].maxY) {
+					if (coord.minX >= This.coords[i].x && coord.minY >= This.coords[i].y
+						&& coord.maxX <= This.coords[i].x + This.coords[i].w 
+						&& coord.maxY <= This.coords[i].y + This.coords[i].h) {
 						isInner = true;
 						break;
 					}
@@ -322,6 +372,11 @@
 				graph.render(t);
 				This.graphs.push(graph);
 			});
+
+			//active next
+			this.steps[this.curStep].querySelector('.btn-next').delClass('disable');
+			this.trigger('next');
+			this.updateUrl();
 		},
 
 		clip: function() {
@@ -349,14 +404,13 @@
 
 			data = data.replace(/image\/\w+/, downmime);
 			btn.href = data;
-			btn.download = "custom.png";
+			btn.download = this.spriteName ? this.spriteName + '.png' : 'custom.png';
 		},
 
 		updateCss: function() {
 			var detector = document.getElementById('ec_detector'),
-				pre = document.querySelector('.set-prefix1').value,
-				ind = document.querySelector('.set-name-rule1').selectedIndex,
-				codes = document.getElementById('spriteCode'),
+				pre = document.querySelectorAll('.set-prefix')[this.curTab].value,
+				ind = document.querySelectorAll('.set-name-rule')[this.curTab].selectedIndex,
 				txt = '',
 				bgtxt = '',
 				len = this.layer.ctx.graphs.length,
@@ -370,7 +424,7 @@
 			this.layer.ctx.graphs.forEach(function(v, i) {
 				var x = This.clipX - v.x ? This.clipX - v.x + 'px' : '0',
 					y = This.clipY - v.y ? This.clipY - v.y + 'px' : '0',
-					last = ind == 0 ? v.name : i,
+					last = ind == 0 ? (v.name ? v.name : This.spriteName + '_' + i) : i,
 					cls = '.' + pre + last;
 
 				txt += '\n' + cls + ' {\n';
@@ -388,11 +442,11 @@
 				}
 			});
 
-			codes.innerHTML = bgtxt + txt;
+			This.codes.innerHTML = bgtxt + txt;
 
 		}
 	});
 
 	var spriter = new Spriter;
 
-//})(EC);
+})(EC);

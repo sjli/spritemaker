@@ -1,11 +1,4 @@
-﻿nav {
-
-}
-
-nav a {
-
-}
-
+﻿
 #viewport {
 	border: dashed 1px #ccc;
 	position: relative;
@@ -32,7 +25,7 @@ nav a {
 	overflow: auto;
 }
 
-.panel, .step, .result {
+.panel, .step, .result, .sprite-code {
 	display: none;
 }
 
@@ -40,7 +33,7 @@ nav a {
 	display: block;
 }
 
-#spriteCode {
+.sprite-code {
 	white-space: pre;
 	height: 300px;
 	overflow: auto;

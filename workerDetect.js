@@ -29,7 +29,7 @@
                 try {
                     detect(p0, arr, coord0);
                     
-                    if (coord0.minX != coord0.maxX && coord0.minY != coord0.maxY)
+                    if (coord0.minX != coord0.maxX || coord0.minY != coord0.maxY)
                         postMessage(coord0);
                 } catch (e) {}
             }
