@@ -849,9 +849,13 @@
             This.trigger(v);
             if (v === 'mousedown' && This.draggable) {
               This.dragging = true;
+              This.trigger('dragstart');
             }
             if (v === 'mouseup') {
-              This.dragging = false;
+              if (This.dragging) {
+                This.trigger('dragend');
+                This.dragging = false;
+              }
             }
           }
         });

@@ -299,6 +299,11 @@
 					name: v.name
 				}).render(This.layer.ctx);
 
+				graph.on('dragend', function() {
+					This.updateUrl();
+					This.updateCss();
+				});
+
 				This.curX += v.width + This.padding1;
 				This.maxY = Math.max(This.maxY, This.curY + v.height + This.padding1);
 
@@ -371,6 +376,11 @@
 				graph.initData(t);
 				graph.render(t);
 				This.graphs.push(graph);
+
+				graph.on('dragend', function() {
+					This.updateUrl();
+					This.updateCss();
+				});
 			});
 
 			//active next
